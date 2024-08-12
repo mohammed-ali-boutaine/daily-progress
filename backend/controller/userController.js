@@ -1,20 +1,29 @@
 import asyncHandler from "express-async-handler";
+import { validationResult } from "express-validator";
 import User from "../models/userModel.js";
 import generateToken from "../utils/generateToken.js";
+import sendMail from "../mail/mail.js";
 
 // @desc auth user/set token
 // route POST /api/users/auth
 // @access Public
 const authUser = asyncHandler(async (req, res) => {
+  // express-validator returns an array of errors
+  // if threre are any errors return a 400 status code and the array of errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
-  console.log("email",email);
-  console.log("user",user);
+  console.log("email", email);
+  console.log("user", user);
 
   const isMatch = await user.matchPassword(password);
 
-  console.log("isMatch",isMatch);
+  console.log("isMatch", isMatch);
   if (user && isMatch) {
     generateToken(res, user._id);
 
@@ -34,12 +43,18 @@ const authUser = asyncHandler(async (req, res) => {
 // @route   POST /api/users
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
+  // Handle validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
 
-//   {
-//     "name":"ali",
-//     "email":"aliboutadabk@@gmail.com",
-//     "password":"aliali"
-// }
+  //   Example of a request body
+  //   {
+  //     "name":"ali",
+  //     "email":"aliboutadabk@@gmail.com",
+  //     "password":"aliali"
+  // }
 
   const { name, email, password } = req.body;
 
@@ -64,6 +79,7 @@ const registerUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
     });
+    sendMail(email, name);
   } else {
     res.status(400);
     throw new Error("Invalid user data");
@@ -85,7 +101,11 @@ const logoutUser = (req, res) => {
 // @route   GET /api/users/profile
 // @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
-  
+  // Check if req.user._id is a valid ObjectId
+  if (!mongoose.Types.ObjectId.isValid(req.user._id)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+
   const user = await User.findById(req.user._id);
 
   if (user) {
@@ -98,7 +118,6 @@ const getUserProfile = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
-
 });
 
 // @desc    Update user profile
@@ -106,6 +125,17 @@ const getUserProfile = asyncHandler(async (req, res) => {
 // @access  Private
 
 const updateUserProfile = asyncHandler(async (req, res) => {
+  // Handle validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  // Check if req.user._id is a valid ObjectId
+  if (!mongoose.Types.ObjectId.isValid(req.user._id)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+
   const user = await User.findById(req.user._id);
 
   if (user) {
