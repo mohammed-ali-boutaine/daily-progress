@@ -7,6 +7,7 @@ import axios from "axios";
 import TodoList from "./pages/TodoList";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/css/bootstrap.min.css";
+import RegisterPage from "./pages/RegisterPage";
 
 
 function Test() {
@@ -32,6 +33,7 @@ function App() {
 
     <Routes>
       <Route path="/todo-list" element={<TodoList />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/test" element={<Test />} />
     </Routes>
     
